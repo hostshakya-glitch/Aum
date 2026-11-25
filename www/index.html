@@ -1,0 +1,293 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<title>Forge – AI App Builder</title>
+<style>
+:root{--bg:#0a0b10;--s1:#12141c;--s2:#1a1d28;--bd:#262a38;--tx:#e8eaf2;--mu:#8b90a5;--ac:#7c5cff;--ac2:#22d3ee;--ok:#34d399;--er:#f87171;--wn:#fbbf24;color-scheme:dark;box-sizing:border-box;padding-top:env(safe-area-inset-top,0px);padding-bottom:env(safe-area-inset-bottom,0px)}
+html{scroll-padding-top:env(safe-area-inset-top,0px);height:100%}
+*{box-sizing:border-box}
+body{margin:0;height:100%;background:radial-gradient(900px 500px at 80% -10%,#1d1640 0,transparent 60%),var(--bg);color:var(--tx);font:14px/1.5 -apple-system,"Inter","Segoe UI",system-ui,sans-serif;display:flex;flex-direction:column}
+header{display:flex;align-items:center;gap:10px;padding:12px 14px;border-bottom:1px solid var(--bd);background:rgba(18,20,28,.7);backdrop-filter:blur(12px)}
+.logo{width:30px;height:30px;border-radius:9px;background:linear-gradient(135deg,var(--ac),var(--ac2));display:grid;place-items:center;font-weight:800;color:#fff}
+h1{font-size:16px;margin:0;letter-spacing:.2px}
+.sp{flex:1}
+select,input,textarea,button{font:inherit;color:var(--tx)}
+select,input{background:var(--s2);border:1px solid var(--bd);border-radius:10px;padding:7px 10px;max-width:46vw}
+button{background:var(--s2);border:1px solid var(--bd);border-radius:10px;padding:7px 12px;cursor:pointer}
+button:hover{border-color:var(--ac)}
+button.p{background:linear-gradient(135deg,var(--ac),#5b8cff);border:0;font-weight:600;color:#fff}
+button:disabled{opacity:.5;cursor:default}
+nav{display:flex;gap:4px;padding:8px 10px;overflow-x:auto;border-bottom:1px solid var(--bd)}
+nav button{border:0;background:none;color:var(--mu);white-space:nowrap;padding:7px 12px}
+nav button.on{background:var(--s2);color:var(--tx);box-shadow:inset 0 -2px 0 var(--ac)}
+main{flex:1;min-height:0;overflow:auto;padding:12px}
+.card{background:var(--s1);border:1px solid var(--bd);border-radius:14px;padding:12px;margin-bottom:12px}
+textarea{width:100%;background:var(--bg);border:1px solid var(--bd);border-radius:12px;padding:10px;resize:vertical}
+#code{min-height:48vh;font:12.5px/1.55 ui-monospace,"SF Mono",Menlo,monospace;white-space:pre;tab-size:2}
+.row{display:flex;gap:8px;flex-wrap:wrap;align-items:center}
+.chips button{font-size:12px;padding:5px 10px;color:var(--mu)}
+.mu{color:var(--mu);font-size:12px}
+#term{background:#06070b;border:1px solid var(--bd);border-radius:12px;padding:10px;min-height:42vh;font:12.5px/1.5 ui-monospace,Menlo,monospace;white-space:pre-wrap;overflow:auto}
+.ok{color:var(--ok)}.er{color:var(--er)}.wn{color:var(--wn)}.ac{color:var(--ac2)}
+.v{display:flex;gap:10px;align-items:center;padding:10px;border:1px solid var(--bd);border-radius:12px;margin-bottom:8px;background:var(--s2)}
+.v b{display:block}
+.tag{font-size:11px;padding:2px 8px;border-radius:99px;background:#2a2150;color:#b9a8ff}
+.hide{display:none}
+#out{white-space:pre-wrap;font:12px ui-monospace,Menlo,monospace;color:var(--mu)}
+</style>
+</head>
+<body>
+<header>
+  <div class="logo">F</div><h1>Forge</h1><span class="tag" id="ver">v1.0.0</span>
+  <div class="sp"></div>
+  <select id="proj" aria-label="Project"></select>
+  <button id="newp" title="New project">＋</button>
+</header>
+<nav id="tabs">
+  <button data-t="gen" class="on">✦ Generate</button>
+  <button data-t="ed">Editor</button>
+  <button data-t="term">Terminal</button>
+  <button data-t="hist">History</button>
+  <button data-t="upd">Updates</button>
+</nav>
+<main>
+  <section id="gen">
+    <div class="card">
+      <div class="row" style="margin-bottom:8px">
+        <select id="kind">
+          <option value="android">Android app (Kotlin)</option>
+          <option value="telegram-py">Telegram bot (Python)</option>
+          <option value="telegram-js">Telegram bot (Node.js)</option>
+          <option value="hosting">Hosting bot (Python)</option>
+          <option value="script">Script (JavaScript)</option>
+        </select>
+        <span class="mu">Describe what you want. Claude writes it.</span>
+      </div>
+      <textarea id="prompt" rows="4" placeholder="e.g. A Telegram bot with /start, /remind and a daily digest…"></textarea>
+      <div class="chips row" style="margin:8px 0">
+        <button data-p="A Telegram bot with /start, /help and an echo command, using environment variables for the token">Echo bot</button>
+        <button data-p="A Kotlin Android app with a single screen that shows a counter and increment button (Jetpack Compose)">Counter app</button>
+        <button data-p="A bot that lets users deploy, start, stop and list their hosted bot processes, with a simple JSON registry">Hosting bot</button>
+      </div>
+      <div class="row"><button class="p" id="go">Generate</button><button id="refine">Refine current code</button><span class="mu" id="gst"></span></div>
+    </div>
+    <div class="card"><div class="mu" style="margin-bottom:6px">Latest output</div><div id="out">Nothing generated yet.</div></div>
+  </section>
+
+  <section id="ed" class="hide">
+    <div class="row" style="margin-bottom:8px">
+      <input id="pname" aria-label="Project name">
+      <button id="save">Save draft</button>
+      <button id="dl">Download</button>
+    </div>
+    <textarea id="code" spellcheck="false"></textarea>
+  </section>
+
+  <section id="term" class="hide">
+    <div id="term-out"></div>
+    <div class="row" style="margin-top:8px"><input id="cmd" style="flex:1;max-width:none" placeholder="help · run · lint · build · versions · clear" autocapitalize="off" autocomplete="off"><button class="p" id="runb">Run</button></div>
+  </section>
+
+  <section id="hist" class="hide"><div id="vlist"></div></section>
+
+  <section id="upd" class="hide">
+    <div class="card">
+      <b>Forge <span id="ver2"></span></b>
+      <p class="mu">Updates are applied by importing a Forge backup or update file. Your projects and every saved version are preserved and merged by ID.</p>
+      <div class="row"><button id="exp">Export backup</button><button class="p" id="impb">Import / update</button><input type="file" id="imp" accept=".json" class="hide"></div>
+      <p class="mu" id="ust"></p>
+    </div>
+    <div class="card"><b>What’s here</b>
+      <p class="mu">Compile in Forge runs validation, linting and packaging of your source (a ready-to-build project file). Producing a signed APK needs the Android SDK and Gradle, which can’t run inside a browser tab. Build the exported source on any CI or build server.</p>
+    </div>
+  </section>
+</main>
+
+<script>
+/* Standalone shim: replaces claude.ai-only APIs when running inside an APK/WebView */
+if(!window.claude){window.claude={use:async n=>{
+ if(n==="sample"){
+  const f=async(input,o={})=>{
+   let u=null;try{u=localStorage.getItem("forge.proxy")}catch(e){}
+   if(!u){u=prompt("Enter your Forge proxy URL (see proxy/README):");if(!u)throw{message:"No proxy URL set."};try{localStorage.setItem("forge.proxy",u)}catch(e){}}
+   const r=await fetch(u,{method:"POST",headers:{"Content-Type":"application/json"},body:JSON.stringify({prompt:typeof input==="string"?input:JSON.stringify(input)})});
+   if(!r.ok)throw{message:"Proxy error "+r.status};
+   const j=await r.json();if(o.onText)o.onText({text:j.text,delta:j.text});
+   return{text:j.text,truncated:false};
+  };return f;
+ }
+ if(n==="downloads"){return{save:async({filename,data})=>{
+  const C=window.Capacitor&&Capacitor.Plugins;
+  if(C&&C.Filesystem&&C.Share){
+   const b64=await new Promise(res=>{const fr=new FileReader();fr.onload=()=>res(fr.result.split(",")[1]);fr.readAsDataURL(data)});
+   const w=await C.Filesystem.writeFile({path:filename,data:b64,directory:"CACHE"});
+   await C.Share.share({title:filename,url:w.uri});return;
+  }
+  const a=document.createElement("a");a.href=URL.createObjectURL(data);a.download=filename;document.body.appendChild(a);a.click();a.remove();
+ }}}
+ return null;
+}}}
+</script>
+<script>
+const $=s=>document.querySelector(s);
+const VER="1.0.0";
+const KEY="forge.v1";
+let S={projects:[],cur:null};
+try{const r=localStorage.getItem(KEY);if(r)S=JSON.parse(r)}catch(e){}
+const persist=()=>{try{localStorage.setItem(KEY,JSON.stringify(S))}catch(e){}};
+const uid=()=>Math.random().toString(36).slice(2,9);
+const EXT={android:"kt","telegram-py":"py","telegram-js":"js",hosting:"py",script:"js"};
+const NAMES={android:"Android app","telegram-py":"Telegram bot","telegram-js":"Telegram bot (Node)",hosting:"Hosting bot",script:"Script"};
+function mk(kind,name){return{id:uid(),name:name||NAMES[kind],kind,code:"",versions:[]}}
+function cur(){return S.projects.find(p=>p.id===S.cur)}
+if(!S.projects.length){const p=mk("telegram-py","My first bot");S.projects.push(p);S.cur=p.id}
+if(!cur())S.cur=S.projects[0].id;
+$("#ver").textContent="v"+VER;$("#ver2").textContent="v"+VER;
+
+function fill(){
+  $("#proj").innerHTML="";
+  S.projects.forEach(p=>{const o=document.createElement("option");o.value=p.id;o.textContent=p.name;$("#proj").appendChild(o)});
+  $("#proj").value=S.cur;
+  const p=cur();$("#pname").value=p.name;$("#code").value=p.code;$("#kind").value=p.kind;
+  vlist();
+}
+function snap(label){
+  const p=cur();p.code=$("#code").value;
+  const last=p.versions[0];
+  if(last&&last.code===p.code)return false;
+  p.versions.unshift({id:uid(),t:Date.now(),label,code:p.code});
+  p.versions=p.versions.slice(0,50);persist();vlist();return true;
+}
+function vlist(){
+  const p=cur(),box=$("#vlist");box.innerHTML="";
+  if(!p.versions.length){box.innerHTML='<div class="card mu">No saved versions yet. Generate code or press Save draft.</div>';return}
+  p.versions.forEach((v,i)=>{
+    const d=document.createElement("div");d.className="v";
+    const info=document.createElement("div");info.style.flex="1";
+    const b=document.createElement("b");b.textContent=(i===0?"Current · ":"")+v.label;
+    const m=document.createElement("span");m.className="mu";m.textContent=new Date(v.t).toLocaleString()+" · "+v.code.split("\n").length+" lines";
+    info.append(b,m);
+    const r=document.createElement("button");r.textContent="Revert";
+    r.onclick=()=>{snap("Before revert");$("#code").value=v.code;p.code=v.code;snap("Reverted to "+v.label);persist();tab("ed")};
+    const x=document.createElement("button");x.textContent="Delete";
+    x.onclick=()=>{p.versions=p.versions.filter(q=>q.id!==v.id);persist();vlist()};
+    d.append(info,r,x);box.appendChild(d);
+  });
+}
+function tab(t){
+  ["gen","ed","term","hist","upd"].forEach(id=>$("#"+id).classList.toggle("hide",id!==t));
+  document.querySelectorAll("#tabs button").forEach(b=>b.classList.toggle("on",b.dataset.t===t));
+}
+document.querySelectorAll("#tabs button").forEach(b=>b.onclick=()=>tab(b.dataset.t));
+$("#proj").onchange=e=>{S.cur=e.target.value;persist();fill()};
+$("#newp").onclick=()=>{const k=$("#kind").value;const p=mk(k,NAMES[k]+" "+(S.projects.length+1));S.projects.push(p);S.cur=p.id;persist();fill();tab("gen")};
+$("#kind").onchange=e=>{cur().kind=e.target.value;persist()};
+$("#pname").onchange=e=>{cur().name=e.target.value||"Untitled";persist();fill()};
+document.querySelectorAll(".chips button").forEach(b=>b.onclick=()=>{$("#prompt").value=b.dataset.p});
+$("#save").onclick=()=>{const ok=snap("Draft");log(ok?"Draft saved.":"No changes since last version.",ok?"ok":"wn")};
+$("#code").oninput=()=>{cur().code=$("#code").value;persist()};
+$("#dl").onclick=async()=>{
+  const p=cur(),name=p.name.replace(/\W+/g,"_")+"."+EXT[p.kind];
+  try{const d=await claude.use("downloads");if(d){await d.save({filename:name,data:new Blob([p.code],{type:"text/plain"})});return}}catch(e){}
+  log("Download isn’t available in this view.","wn");tab("term");
+};
+
+// AI generation
+const SYS={
+  android:"You are an expert Android engineer. Output a single complete Kotlin file using Jetpack Compose (MainActivity.kt) with package and imports.",
+  "telegram-py":"You are an expert Python engineer. Output one complete Telegram bot file using python-telegram-bot v20+ async API. Read the token from the BOT_TOKEN environment variable.",
+  "telegram-js":"You are an expert Node.js engineer. Output one complete Telegram bot file using the telegraf package. Read the token from process.env.BOT_TOKEN.",
+  hosting:"You are an expert Python engineer. Output one complete Telegram hosting-bot file that manages user bot processes (deploy, start, stop, list, logs) with subprocess and a JSON registry. Read the token from BOT_TOKEN.",
+  script:"You are an expert JavaScript engineer. Output one complete, self-contained script that runs in plain JavaScript with console.log output."
+};
+const clean=t=>t.replace(/^```[\w+-]*\n?/,"").replace(/\n?```\s*$/,"").trim();
+async function gen(refine){
+  const p=cur(),ask=$("#prompt").value.trim();
+  if(!ask){$("#gst").textContent="Describe what to build first.";return}
+  $("#go").disabled=$("#refine").disabled=true;$("#gst").textContent="Generating…";
+  try{
+    const sample=await claude.use("sample");
+    if(!sample)throw {message:"AI generation isn’t available in this view."};
+    let input=SYS[p.kind]+" Respond with ONLY the code, no markdown fences, no explanation. Add brief comments.\n\n";
+    input+=refine&&$("#code").value?"Current code:\n"+$("#code").value+"\n\nChange request: "+ask:"Request: "+ask;
+    if(refine)snap("Before refine");
+    const r=await sample(input,{cache:false,modelTier:"complex",onText:({text})=>{$("#out").textContent=text}});
+    const code=clean(r.text);
+    $("#code").value=code;p.code=code;snap((refine?"Refined: ":"Generated: ")+ask.slice(0,40));
+    $("#out").textContent="Done · "+code.split("\n").length+" lines. Open the Editor tab to review.";
+    $("#gst").textContent="";tab("ed");
+  }catch(e){$("#gst").textContent=(e&&e.message)||"Generation failed.";if(e&&e.text)$("#out").textContent=e.text}
+  $("#go").disabled=$("#refine").disabled=false;
+}
+$("#go").onclick=()=>gen(false);$("#refine").onclick=()=>gen(true);
+
+// Terminal
+const T=$("#term-out");
+function log(m,c){const d=document.createElement("div");if(c)d.className=c;d.textContent=m;T.appendChild(d);T.scrollTop=T.scrollHeight}
+T.id="term-out";T.style.cssText="background:#06070b;border:1px solid var(--bd);border-radius:12px;padding:10px;min-height:42vh;max-height:60vh;font:12.5px/1.5 ui-monospace,Menlo,monospace;white-space:pre-wrap;overflow:auto";
+log("Forge terminal ready. Type help.","ac");
+function balance(src){const st=[],pairs={")":"(","]":"[","}":"{"};for(const ch of src.replace(/(["'`])(?:\\.|(?!\1)[^\\\n])*\1/g,"")){if("([{".includes(ch))st.push(ch);else if(pairs[ch]){if(st.pop()!==pairs[ch])return false}}return st.length===0}
+function lint(){
+  const p=cur(),c=$("#code").value,issues=[];
+  if(!c.trim())issues.push(["er","Source is empty."]);
+  if(!balance(c))issues.push(["er","Unbalanced brackets or parentheses."]);
+  if(/(\d{8,10}:[\w-]{30,})/.test(c))issues.push(["er","Possible hard-coded Telegram token. Use an environment variable."]);
+  if(/TODO|FIXME/.test(c))issues.push(["wn","TODO/FIXME markers found."]);
+  if(p.kind==="android"&&!/class\s+\w+\s*:\s*\w*Activity/.test(c))issues.push(["wn","No Activity subclass found."]);
+  if(p.kind.startsWith("telegram")&&!/BOT_TOKEN/.test(c))issues.push(["wn","BOT_TOKEN env variable isn’t referenced."]);
+  if(p.kind==="telegram-py"||p.kind==="hosting"){if(/\t/.test(c)&&/^ +/m.test(c))issues.push(["er","Mixed tabs and spaces."])}
+  return issues;
+}
+async function run(){
+  const p=cur(),c=$("#code").value;
+  if(!c.trim())return log("Nothing to run.","er");
+  if(p.kind!=="script"&&p.kind!=="telegram-js"){log("Run executes JavaScript only. Use lint and build for "+NAMES[p.kind]+".","wn");return}
+  if(p.kind==="telegram-js"){log("Telegram bots need a network and token; running in the sandbox is disabled. Use lint/build.","wn");return}
+  log("$ run","ac");const out=[];
+  const fake={log:(...a)=>out.push(a.map(String).join(" ")),error:(...a)=>out.push("ERR "+a.join(" ")),warn:(...a)=>out.push("WARN "+a.join(" "))};
+  try{const f=new Function("console","fetch","localStorage","document","window",c);const r=f(fake,undefined,undefined,undefined,undefined);if(r&&r.then)await Promise.race([r,new Promise((_,j)=>setTimeout(()=>j(new Error("Timed out after 5s")),5000))]);out.forEach(l=>log(l));log("Exited with code 0","ok")}
+  catch(e){out.forEach(l=>log(l));log(String(e),"er");log("Exited with code 1","er")}
+}
+function build(){
+  const p=cur(),is=lint(),errs=is.filter(i=>i[0]==="er");
+  log("$ build "+p.name,"ac");is.forEach(i=>log("  "+i[1],i[0]));
+  if(errs.length)return log("Build failed: "+errs.length+" error(s).","er");
+  snap("Build snapshot");
+  log("Validated · packaged "+p.name.replace(/\W+/g,"_")+"."+EXT[p.kind]+" ("+new Blob([p.code]).size+" bytes)","ok");
+  log(p.kind==="android"?"Next: drop the file into an Android Studio / Gradle project and run ./gradlew assembleRelease.":"Next: download it and run on your server or host.","mu");
+}
+async function exec(line){
+  log("› "+line);
+  const c=line.trim().split(/\s+/)[0];
+  if(c==="help")log("run · execute JS scripts in a sandbox\nlint · static checks\nbuild · validate, snapshot and package\nversions · list saved versions\nsave · save draft\nclear · clear terminal");
+  else if(c==="run")await run();
+  else if(c==="lint"){const i=lint();i.length?i.forEach(x=>log(x[1],x[0])):log("No issues found.","ok")}
+  else if(c==="build")build();
+  else if(c==="save"){log(snap("Draft")?"Draft saved.":"No changes.","ok")}
+  else if(c==="versions")cur().versions.forEach((v,i)=>log(i+". "+v.label+" · "+new Date(v.t).toLocaleTimeString()));
+  else if(c==="clear")T.innerHTML="";
+  else if(c)log("Unknown command: "+c,"er");
+}
+$("#runb").onclick=()=>{const v=$("#cmd").value;$("#cmd").value="";exec(v)};
+$("#cmd").onkeydown=e=>{if(e.key==="Enter")$("#runb").click()};
+
+// Backup / update
+$("#exp").onclick=async()=>{
+  try{const d=await claude.use("downloads");if(d){await d.save({filename:"forge-backup.json",data:new Blob([JSON.stringify({forge:VER,projects:S.projects})],{type:"application/json"})});return}}catch(e){}
+  $("#ust").textContent="Download isn’t available in this view.";
+};
+$("#impb").onclick=()=>$("#imp").click();
+$("#imp").onchange=async e=>{
+  const f=e.target.files[0];if(!f)return;
+  try{
+    const j=JSON.parse(await f.text());if(!Array.isArray(j.projects))throw 0;
+    let n=0;j.projects.forEach(p=>{if(!p||!p.id||typeof p.code!=="string")return;const i=S.projects.findIndex(q=>q.id===p.id);if(i<0)S.projects.push(p);else{const have=new Set(S.projects[i].versions.map(v=>v.id));(p.versions||[]).forEach(v=>{if(!have.has(v.id))S.projects[i].versions.push(v)});S.projects[i].versions.sort((a,b)=>b.t-a.t)}n++});
+    persist();fill();$("#ust").textContent="Imported "+n+" project(s). Forge file version: "+(j.forge||"unknown")+".";
+  }catch(err){$("#ust").textContent="That doesn’t look like a Forge backup."}
+};
+fill();
+</script>
+</body>
+</html>
